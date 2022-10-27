@@ -514,11 +514,17 @@ def updateAreaLogic(availableLocations, locArray, loadout, Connections) :
     pinkDoor = (Missile in loadout) or (Super in loadout)
     canUseBombs = (Morph in loadout) and ((Bombs in loadout) or (PowerBomb in loadout))
     canUsePB = (Morph in loadout) and (PowerBomb in loadout)
-    canFly = canUseBombs or (SpaceJump in loadout)
+    canFly = jumpAble and (((Morph in loadout) and (Bombs in loadout)) or (SpaceJump in loadout))
     wave = (Wave in loadout) or ((Charge in loadout) and (Hypercharge in loadout))
     breakIce = (Plasma in loadout) or ((Charge in loadout) and (Hypercharge in loadout))
+    crystalFlash = canUsePB and (ammoCount>=110)
     energyCount=0
+    ammoCount=0
     for item in loadout :
+        if item == SmallAmmo :
+           ammmoCount+=5
+        if (item == LargeAmmo) or (item == Missile) or (item == Super) or (item == PowerBomb) :
+           ammoCount+=10
         if item == Energy :
             energyCount += 1
     movement = False #check if loadout keeps increasing
@@ -531,66 +537,109 @@ def updateAreaLogic(availableLocations, locArray, loadout, Connections) :
             loadout.append(other)
         if (CraterR in loadout) == False :
             other=otherDoor(CraterR,Connections)
-            if canFly and canUsePB :
+            if (canFly or (SpeedBooster in loadout and (jumpAble or Energy in loadout))) and canUsePB :
                 loadout.append(CraterR)
                 loadout.append(other)
         if (RuinedConcourseBL in loadout) == False :
             other=otherDoor(RuinedConcourseBL,Connections)
             if (other in loadout) :
                 loadout.append(RuinedConcourseBL)
-            elif jumpAble and (Missile in loadout) and (Morph in loadout) :
+            elif jumpAble and pinkDoor:
                 loadout.append(RuinedConcourseBL)
                 loadout.append(other)
-            elif (RuinedConcourseTR in loadout) and jumpAble and (Morph in loadout) and (SpeedBooster in loadout) and (Energy in loadout):
+            #Morph or pinkDoor is to either go straight down and through the morph tunnel, or to use the pink gate and go around through Cistern.
+            elif (RuinedConcourseTR in loadout) and jumpAble and (Morph in loadout or pinkDoor) and (SpeedBooster in loadout) and (Energy in loadout):
                 loadout.append(RuinedConcourseBL)
                 loadout.append(other)
-            elif (CausewayR in loadout) and jumpAble and canUseBombs and ((SpeedBooster in loadout) or (Speedball in loadout)) :
+            #you might be able to short charge this and not need bombs when going right->left, if breaking the speed blocks. TODO: Test whether you can
+            elif (CausewayR in loadout) and jumpAble and canUseBombs and ((SpeedBooster in loadout) or (Speedball in loadout) or (wave and (Ice in loadout)) or (GravitySuit in loadout))) :
                 loadout.append(RuinedConcourseBL)
                 loadout.append(other)
-            elif (SporeFieldTR in loadout) and jumpAble and (Morph in loadout):
+            elif (SporeFieldTR in loadout) and jumpAble and (Morph in loadout) and pinkDoor:
                 loadout.append(RuinedConcourseBL)
-                loadout.append(other)
-            elif (SporeFieldBR in loadout) and jumpAble and (Morph in loadout):
+                loadout.append(other)            
+            elif (SporeFieldBR in loadout) and jumpAble and (Morph in loadout) and pinkDoor:
                 loadout.append(RuinedConcourseBL)
                 loadout.append(other)
         if (RuinedConcourseTR in loadout) == False :
             other=otherDoor(RuinedConcourseTR,Connections)
             if (other in loadout) :
                 loadout.append(RuinedConcourseTR)
-            elif (jumpAble and (Missile in loadout) and (Morph in loadout) and (SpeedBooster in loadout)) :
+            elif (jumpAble and (pinkDoor in loadout) and (SpeedBooster in loadout)) :
                 loadout.append(RuinedConcourseTR)
                 loadout.append(other)
-            elif (RuinedConcourseBL in loadout) and jumpAble and (Morph in loadout) and (SpeedBooster in loadout) and (Energy in loadout) :
+            elif (RuinedConcourseBL in loadout) and jumpAble and (Morph in loadout or pinkDoor) and (SpeedBooster in loadout) and (Energy in loadout) :
                 loadout.append(RuinedConcourseTR)
                 loadout.append(other)
+            #once again, see if you can short charge this to skip the bombs requirement
             elif (CausewayR in loadout) and jumpAble and canUseBombs and (SpeedBooster in loadout) and (Energy in loadout) :
                 loadout.append(RuinedConcourseTR)
                 loadout.append(other)
-            elif (SporeFieldTR in loadout) and jumpAble and (Morph in loadout) and (SpeedBooster in loadout) and (Energy in loadout) :
+            elif (SporeFieldTR in loadout) and jumpAble and pinkDoor and (Morph in loadout) and (SpeedBooster in loadout) and (Energy in loadout) :
                 loadout.append(RuinedConcourseTR)
                 loadout.append(other)
-            elif (SporeFieldBR in loadout) and jumpAble and (Morph in loadout) and (SpeedBooster in loadout) and (Energy in loadout) :
+            elif (SporeFieldBR in loadout) and jumpAble and pinkDoor and (Morph in loadout) and (SpeedBooster in loadout) and (Energy in loadout) :
                 loadout.append(RuinedConcourseTR)
                 loadout.append(other)
+        #everything here is currently a mess based on whether or not you can actually short charge the speed blocks, additionally the small underwater section can let you GGG the gate without needing speedball. Currently everything has a canUseBombs requirement for the way back out, which might not be accurate.
         if (CausewayR in loadout) == False :
             other=otherDoor(CausewayR,Connections)
             if (other in loadout) :
                 loadout.append(CausewayR)
-            elif (jumpAble and (Missile in loadout) and (Morph in loadout) and ((SpeedBooster in loadout) or (Speedball in loadout))) :
+           #I do not want to test suitless GGGs I am already terrible at normal GGGs. If rusty can consistently do this gate glitch suitless then I guess it could be added.
+            elif (jumpAble and pinkDoor and (Morph in loadout) and canUseBombs and ((SpeedBooster in loadout) or (Speedball in loadout) or (wave and (Ice in loadout)) or (GravitySuit in loadout))) :
                 loadout.append(CausewayR)
                 loadout.append(other)
-            elif (RuinedConcourseBL in loadout) and jumpAble and (Morph in loadout) and (SpeedBooster in loadout) and (Energy in loadout):
+            elif (RuinedConcourseBL in loadout) and jumpAble and (Morph in loadout) and canUseBombs and ((SpeedBooster in loadout) or (Speedball in loadout) or (wave and (Ice in loadout)) or (GravitySuit in loadout))):
                 loadout.append(CausewayR)
                 loadout.append(other)
             elif (RuinedConcourseTR in loadout) and jumpAble and canUseBombs and (SpeedBooster in loadout) and (Energy in loadout):
                 loadout.append(CausewayR)
                 loadout.append(other)
-            elif (SporeFieldTR in loadout) and jumpAble and (Morph in loadout) and ((SpeedBooster in loadout) or (Speedball in loadout)) and canUseBombs:
+            elif (SporeFieldTR in loadout) and pinkDoor and jumpAble and (Morph in loadout) and canUseBombs and ((SpeedBooster in loadout) or (Speedball in loadout) or (wave and (Ice in loadout)) or (GravitySuit in loadout))):
                 loadout.append(CausewayR)
                 loadout.append(other)
-            elif (SporeFieldBR in loadout) and jumpAble and (Morph in loadout) and ((SpeedBooster in loadout) or (Speedball in loadout)) and canUseBombs:
+            elif (SporeFieldBR in loadout) and pinkDoor and jumpAble and (Morph in loadout) and canUseBombs and ((SpeedBooster in loadout) or (Speedball in loadout) or (wave and (Ice in loadout)) or (GravitySuit in loadout))):
                 loadout.append(CausewayR)
                 loadout.append(other)
+        if (SporeFieldTR in loadout) == false :
+           other=otherDoor(SporeFieldTR,Connections)
+           if (other in loadout) :
+               loadout.append(SporeFieldTR)
+           elif (jumpAble and pinkDoor and (Morph in loadout)) :
+                      loadout.append(SporeFieldTR)
+                      loadout.append(other)
+           elif (RuinedConcourseBL in loadout) and jumpAble and pinkDoor and (Morph in loadout)) :
+                      loadout.append(SporeFieldTR)
+                      loadout.append(other)
+           elif (RuinedConcourseTR in loadout) and jumpAble and pinkDoor and (Morph in loadout) and (SpeedBooster in loadout) and (Energy in loadout)):
+                      loadout.append(SporeFieldTR)
+                      loadout.append(other)
+           elif (CausewayR in loadout) and jumpAble and canUseBombs and ((SpeedBooster in loadout) or (Speedball in loadout) or (wave and (Ice in loadout)) or (GravitySuit in loadout))):
+                      loadout.append(SporeFieldTR)
+                      loadout.append(other)
+           elif (SporeFieldBR in loadout) and jumpAble)):
+                      loadout.append(SporeFieldTR)
+                      loadout.append(other)
+        if (SporeFieldBR in loadout) == false :
+           other=otherDoor(SporeFieldBR,Connections)
+           if (other in loadout) :
+               loadout.append(SporeFieldBR)
+           elif (jumpAble and pinkDoor and (Morph in loadout)) :
+                      loadout.append(SporeFieldBR)
+                      loadout.append(other)
+           elif (RuinedConcourseBL in loadout) and jumpAble and pinkDoor and (Morph in loadout)) :
+                      loadout.append(SporeFieldBR)
+                      loadout.append(other)
+           elif (RuinedConcourseTR in loadout) and jumpAble and pinkDoor and (Morph in loadout) and (SpeedBooster in loadout) and (Energy in loadout)):
+                      loadout.append(SporeFieldBR)
+                      loadout.append(other)
+           elif (CausewayR in loadout) and jumpAble and canUseBombs and ((SpeedBooster in loadout) or (Speedball in loadout) or (wave and (Ice in loadout)) or (GravitySuit in loadout))):
+                      loadout.append(SporeFieldBR)
+                      loadout.append(other)
+           elif (SporeFieldTR in loadout) and jumpAble)):
+                      loadout.append(SporeFieldBR)
+                      loadout.append(other)
         if (OceanShoreR in loadout) == False :
             other=otherDoor(OceanShoreR,Connections)
             if (other in loadout) :
